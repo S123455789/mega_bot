@@ -1,6 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import *
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 
 from config import BOT_TOKEN, ADMIN_ID, FORCE_CHANNEL, LANG
 from downloader import download
@@ -30,7 +30,6 @@ async def start(update: Update, context):
         return
 
     db.add(str(update.message.chat_id))
-
     await update.message.reply_text(LANG["start"])
 
 
@@ -96,13 +95,20 @@ async def broadcast(update: Update, context):
             pass
 
 
-# ----- Bot Start -----
-app = ApplicationBuilder().token(BOT_TOKEN).build()
+# ========== MAIN START ==========
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("broadcast", broadcast))
-app.add_handler(MessageHandler(filters.TEXT, handle))
-app.add_handler(CallbackQueryHandler(button))
+def main():
+    print("🚀 KOYEB READY BOT STARTED")
 
-print("🚀 KOYEB READY BOT STARTED")
-app.run_polling()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("broadcast", broadcast))
+    app.add_handler(MessageHandler(filters.TEXT, handle))
+    app.add_handler(CallbackQueryHandler(button))
+
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
