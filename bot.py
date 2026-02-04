@@ -1,16 +1,24 @@
 import os
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
+from flask import Flask
 
 from config import BOT_TOKEN, ADMIN_ID, FORCE_CHANNEL, LANG
 from downloader import download
 from buttons import quality
 import database as db
 
+# ----- Dummy Web Server -----
+app_web = Flask(__name__)
+
+@app_web.route("/")
+def home():
+    return "Bot is alive"
+
 # ----- Database Start -----
 db.init()
 
-# ----- Force Join Check -----
 async def force_join(update, context):
     try:
         user = update.message.chat_id
@@ -24,7 +32,6 @@ async def force_join(update, context):
         return True
 
 
-# ----- Start Command -----
 async def start(update: Update, context):
     if not await force_join(update, context):
         return
@@ -33,7 +40,6 @@ async def start(update: Update, context):
     await update.message.reply_text(LANG["start"])
 
 
-# ----- Link Handle -----
 async def handle(update: Update, context):
     if not await force_join(update, context):
         return
@@ -50,7 +56,6 @@ async def handle(update: Update, context):
     )
 
 
-# ----- Button Click -----
 async def button(update: Update, context):
     query = update.callback_query
     await query.answer()
@@ -81,7 +86,6 @@ async def button(update: Update, context):
         await msg.edit_text(f"❌ Error:\n{e}")
 
 
-# ----- Broadcast (Admin) -----
 async def broadcast(update: Update, context):
     if str(update.message.chat_id) != ADMIN_ID:
         return
@@ -95,11 +99,7 @@ async def broadcast(update: Update, context):
             pass
 
 
-# ========== MAIN START ==========
-
-def main():
-    print("🚀 KOYEB READY BOT STARTED")
-
+async def run_bot():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -107,7 +107,18 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT, handle))
     app.add_handler(CallbackQueryHandler(button))
 
-    app.run_polling()
+    print("🚀 FREE KOYEB BOT STARTED")
+    await app.run_polling()
+
+
+def main():
+    loop = asyncio.get_event_loop()
+
+    # Bot background me
+    loop.create_task(run_bot())
+
+    # Web server port 8000
+    app_web.run(host="0.0.0.0", port=8000)
 
 
 if __name__ == "__main__":
